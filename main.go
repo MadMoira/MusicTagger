@@ -1,12 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
-	"strconv"
-	"strings"
 
-	"github.com/gdamore/tcell/v2"
 	"github.com/mikkyang/id3-go"
 	"github.com/rivo/tview"
 
@@ -43,14 +41,15 @@ func main() {
 		AddItem(
 			tview.NewFlex().SetDirection(tview.FlexRow).
 				AddItem(tview.NewFlex().
-					AddItem(list, 0, 1, true).
-					AddItem(tw, 0, 1, false), 0, 7, true).
+					AddItem(list, 0, 1, false).
+					AddItem(tw, 0, 1, false), 0, 7, false).
 				AddItem(tview.NewTextView().SetText("testing"), 0, 1, false), 0, 1, false)
 
-	path, err := os.Getwd()
-	if err != nil {
-		log.Println(err)
-	}
+	// path, err := os.Getwd()
+	// if err != nil {
+	// 	log.Println(err)
+	// }
+	path := "/mnt/f/Music/Afterglow"
 	currentPath = path
 
 	// err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
@@ -62,7 +61,12 @@ func main() {
 	retrieveDirFiles(path)
 	addPathsToList(files)
 
-	if err := app.SetRoot(flex, true).SetInputCapture(appEventHandler).EnableMouse(true).Run(); err != nil {
+	app.SetRoot(flex, true).
+		SetFocus(list).
+		SetInputCapture(appEventHandler).
+		EnableMouse(true)
+
+	if err := app.Run(); err != nil {
 		panic(err)
 	}
 }
@@ -71,80 +75,57 @@ func retrieveDirFiles(path string) {
 	files = nil
 	infos = nil
 
+	list.SetTitle(path)
 	dirFiles, err := ioutil.ReadDir(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, file := range dirFiles {
-		files = append(files, path+"/"+file.Name())
+		files = append(files, file.Name())
 		infos = append(infos, file)
 	}
 }
 
 func addPathsToList(files []string) {
+	list.Clear()
 	for _, file := range files {
 		list.AddItem(file, "", 0, nil)
 	}
 }
 
-func appEventHandler(eventKey *tcell.EventKey) *tcell.EventKey {
-	if eventKey.Rune() == 'q' {
-		app.Stop()
-	}
+func showMetadata(songName string) {
 
-	if eventKey.Rune() == 'e' {
-		app.SetFocus(list)
-	}
-	return eventKey
-}
-
-func showMetadata(path string) {
-
-	m, err := id3.Open(path)
+	m, err := id3.Open(currentPath + "/" + songName)
 	if err != nil {
-		log.Fatalf("Error loading file %v", path)
+		log.Fatalf("Error loading file %v", songName)
 		return
 	}
 	defer m.Close()
 
+	template := fmt.Sprintf(
+		`
+	TALB: %v
+	TCOM: %v
+	TEXT: %v
+	TPE1: %v
+	TPE2: %v
+	`, m.Frame("TALB"), m.Frame("TCOM"), m.Frame("TEXT"), m.Frame("TPE1"), m.Frame("TPE2"))
+
+	tw.SetText(template)
+
 	// log.Printf("Album %v", m.Album())
 	// log.Printf("Artis %v", m.Artist())
-	log.Printf("TALB %v", m.Frame("TALB"))
-	log.Printf("TCOM %v", m.Frame("TCOM"))
-	log.Printf("TEXT %v", m.Frame("TEXT"))
-	log.Printf("TPE2 %v", m.Frame("TPE2"))
-	log.Printf("Artist %v", m.AllFrames())
 
-}
+	frames := m.AllFrames()
 
-func listEventHandler(eventKey *tcell.EventKey) *tcell.EventKey {
-	if eventKey.Key() == tcell.KeyEnter {
-		currentItem := list.GetCurrentItem()
-		if infos[currentItem].IsDir() {
-			log.Printf("Checking path %v", files[currentItem])
-			currentPath = files[currentItem]
-			retrieveDirFiles(currentPath)
-			list.Clear()
-			addPathsToList(files)
-			tw.SetText("New Dir")
-		} else {
-			showMetadata(files[currentItem])
-			tw.SetTextColor(tcell.ColorBlue)
-			tw.SetText(strconv.FormatBool(infos[currentItem].IsDir()))
-		}
-
+	for _, frame := range frames {
+		log.Printf("%v %v %v", frame.Id(), frame.Size(), frame.String())
 	}
 
-	if eventKey.Rune() == 'a' {
-		a := strings.Split(currentPath, "/")
-		a = a[:len(a)-1]
-		backPath := strings.Join(a, "/")
-		retrieveDirFiles(backPath)
-		currentPath = backPath
-		list.Clear()
-		addPathsToList(files)
-	}
+	// log.Printf("TALB %v", m.Frame("TALB"))
+	// log.Printf("TCOM %v", m.Frame("TCOM"))
+	// log.Printf("TEXT %v", m.Frame("TEXT"))
+	// log.Printf("TPE2 %v", m.Frame("TPE2"))
 
-	return eventKey
 }
