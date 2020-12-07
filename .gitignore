@@ -1,0 +1,8 @@
+# ID Generated
+.vscode/
+
+# Some folders with music to test if it's working
+testdata/
+
+# Logs files
+**/*.log
