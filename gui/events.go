@@ -22,6 +22,7 @@ func listEventHandler(eventKey *tcell.EventKey) *tcell.EventKey {
 	}
 
 	if eventKey.Rune() == 'a' {
+		tw.SetText("")
 		a := strings.Split(currentPath, "/")
 		a = a[:len(a)-1]
 		backPath := strings.Join(a, "/")

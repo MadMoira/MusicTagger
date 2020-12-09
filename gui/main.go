@@ -2,12 +2,12 @@ package gui
 
 import (
 	"bytes"
-	"io/ioutil"
+	"fmt"
 	"log"
-	"strings"
 	"text/template"
 
 	"github.com/mikkyang/id3-go"
+	v2 "github.com/mikkyang/id3-go/v2"
 	"github.com/rivo/tview"
 
 	"os"
@@ -17,6 +17,7 @@ var app *tview.Application
 var list *tview.List
 var tw *tview.TextView
 var topTw *tview.TextView
+var bottomTw *tview.TextView
 var frm *tview.Form
 
 var files []string
@@ -27,21 +28,16 @@ var oldSelection int
 
 // Init Starts the GUI
 func Init() {
-	f, err := os.OpenFile("info.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalf("error opening file: %v", err)
-	}
-	defer f.Close()
-	log.SetOutput(f)
-
 	app = tview.NewApplication()
 	list = tview.NewList()
 	list.SetBorder(true)
 	list.SetInputCapture(listEventHandler)
 	tw = tview.NewTextView()
 	tw.SetBorder(true)
-	tw.SetText("Hello World")
+	tw.SetText("")
 	topTw = tview.NewTextView()
+	bottomTw = tview.NewTextView()
+	bottomTw.SetText("[S] Store current metadata\t[R] Recover metadata")
 
 	frm = tview.NewForm()
 
@@ -54,21 +50,11 @@ func Init() {
 						AddItem(list, 0, 2, false).
 						AddItem(tw, 0, 3, false),
 					0, 10, false).
-				AddItem(tview.NewTextView().SetText("testing"), 0, 1, false), 0, 1, false)
+				AddItem(bottomTw, 0, 1, false), 0, 1, false)
 
-	// path, err := os.Getwd()
-	// if err != nil {
-	// 	log.Println(err)
-	// }
-	path := "/mnt/f/Music/Afterglow"
-	// path := "/home/camilo.r/Documents/pcode/go/MusicTagger/testdata/Afterglow"
+	// path := "/mnt/f/Music/Afterglow"
+	path := "/home/camilo.r/Documents/pcode/go/MusicTagger/testdata/Afterglow"
 	currentPath = path
-
-	// err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-	// 	files = append(files, path)
-	// 	infos = append(infos, info)
-	// 	return nil
-	// })
 
 	retrieveDirFiles(path)
 	addPathsToList(files)
@@ -83,42 +69,17 @@ func Init() {
 	}
 }
 
-func retrieveDirFiles(path string) {
-
-	validExtensions := []string{"mp3"}
-
-	files = nil
-	infos = nil
-
-	topTw.SetText(path)
-	dirFiles, err := ioutil.ReadDir(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, file := range dirFiles {
-		pathParts := strings.Split(file.Name(), ".")
-		ext := pathParts[len(pathParts)-1]
-
-		found := false
-		for _, validExt := range validExtensions {
-			if ext == validExt {
-				found = true
-				break
-			}
-		}
-
-		if found || file.IsDir() {
-			files = append(files, file.Name())
-			infos = append(infos, file)
-		}
-	}
-}
-
 func addPathsToList(files []string) {
 	list.Clear()
 	for _, file := range files {
 		list.AddItem(file, "", 0, nil)
+	}
+}
+
+func debugFrames(frames []v2.Framer) {
+	for _, frame := range frames {
+		log.Printf("Frame Name %v", frame.Id())
+		log.Printf("Frame Value %v", frame.String())
 	}
 }
 
@@ -150,13 +111,13 @@ func showMetadata(songName string) {
 	}
 
 	song := metadata{
-		TALB: m.Frame("TALB").String(),
-		TIT2: m.Frame("TIT2").String(),
-		TPE1: m.Frame("TPE1").String(),
-		TPE2: m.Frame("TPE2").String(),
-		TCON: m.Frame("TCON").String(),
-		TRCK: m.Frame("TRCK").String(),
-		TYER: m.Frame("TYER").String(),
+		TALB: fmt.Sprintf("%v", m.Frame("TALB")),
+		TIT2: fmt.Sprintf("%v", m.Frame("TIT2")),
+		TPE1: fmt.Sprintf("%v", m.Frame("TPE1")),
+		TPE2: fmt.Sprintf("%v", m.Frame("TPE2")),
+		TCON: fmt.Sprintf("%v", m.Frame("TCON")),
+		TRCK: fmt.Sprintf("%v", m.Frame("TRCK")),
+		TYER: fmt.Sprintf("%v", m.Frame("TYER")),
 	}
 
 	log.Printf("things %v", song)

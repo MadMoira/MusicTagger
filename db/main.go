@@ -2,6 +2,7 @@ package db
 
 import (
 	"log"
+	"os"
 
 	"github.com/jmoiron/sqlx"
 
@@ -10,10 +11,16 @@ import (
 )
 
 var schema = `
-CREATE TABLE test (
+CREATE TABLE music_info (
 	id integer,
-	name text,
 	path text,
+	TALB text,
+	TIT2 text,
+	TPE1 text,
+	TPE2 text,
+	TCON text,
+	TRCK text,
+	TYER text,
 	primary key (id)
 )
 `
@@ -29,4 +36,9 @@ func InitDb() {
 	}
 
 	db.MustExec(schema)
+}
+
+// StoreFileInfoData Stores all data sent by the 
+func StoreFileInfoData(infos []os.FileInfo) {
+
 }
