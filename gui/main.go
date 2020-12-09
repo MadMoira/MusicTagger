@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"log"
+	"strings"
 	"text/template"
 
 	"github.com/mikkyang/id3-go"
@@ -15,11 +16,14 @@ import (
 var app *tview.Application
 var list *tview.List
 var tw *tview.TextView
+var topTw *tview.TextView
 var frm *tview.Form
 
 var files []string
 var infos []os.FileInfo
 var currentPath string
+
+var oldSelection int
 
 // Init Starts the GUI
 func Init() {
@@ -37,22 +41,27 @@ func Init() {
 	tw = tview.NewTextView()
 	tw.SetBorder(true)
 	tw.SetText("Hello World")
+	topTw = tview.NewTextView()
+
 	frm = tview.NewForm()
 
 	flex := tview.NewFlex().
 		AddItem(
 			tview.NewFlex().SetDirection(tview.FlexRow).
-				AddItem(tview.NewFlex().
-					AddItem(list, 0, 2, false).
-					AddItem(tw, 0, 3, false), 0, 7, false).
+				AddItem(topTw, 0, 1, false).
+				AddItem(
+					tview.NewFlex().
+						AddItem(list, 0, 2, false).
+						AddItem(tw, 0, 3, false),
+					0, 10, false).
 				AddItem(tview.NewTextView().SetText("testing"), 0, 1, false), 0, 1, false)
 
 	// path, err := os.Getwd()
 	// if err != nil {
 	// 	log.Println(err)
 	// }
-	// path := "/mnt/f/Music/Afterglow"
-	path := "/home/camilo.r/Documents/pcode/go/MusicTagger/testdata/Afterglow"
+	path := "/mnt/f/Music/Afterglow"
+	// path := "/home/camilo.r/Documents/pcode/go/MusicTagger/testdata/Afterglow"
 	currentPath = path
 
 	// err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
@@ -75,18 +84,34 @@ func Init() {
 }
 
 func retrieveDirFiles(path string) {
+
+	validExtensions := []string{"mp3"}
+
 	files = nil
 	infos = nil
 
-	list.SetTitle(path)
+	topTw.SetText(path)
 	dirFiles, err := ioutil.ReadDir(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, file := range dirFiles {
-		files = append(files, file.Name())
-		infos = append(infos, file)
+		pathParts := strings.Split(file.Name(), ".")
+		ext := pathParts[len(pathParts)-1]
+
+		found := false
+		for _, validExt := range validExtensions {
+			if ext == validExt {
+				found = true
+				break
+			}
+		}
+
+		if found || file.IsDir() {
+			files = append(files, file.Name())
+			infos = append(infos, file)
+		}
 	}
 }
 

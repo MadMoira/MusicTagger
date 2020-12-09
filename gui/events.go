@@ -13,6 +13,7 @@ func listEventHandler(eventKey *tcell.EventKey) *tcell.EventKey {
 		if infos[currentItem].IsDir() {
 			log.Printf("Checking path %v", files[currentItem])
 			currentPath = currentPath + "/" + files[currentItem]
+			oldSelection = currentItem
 			retrieveDirFiles(currentPath)
 			addPathsToList(files)
 		} else {
@@ -28,6 +29,7 @@ func listEventHandler(eventKey *tcell.EventKey) *tcell.EventKey {
 		currentPath = backPath
 		list.Clear()
 		addPathsToList(files)
+		list.SetCurrentItem(oldSelection)
 	}
 
 	return eventKey

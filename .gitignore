@@ -1,8 +1,9 @@
-# ID Generated
+# IDE Generated
 .vscode/
 
 # Some folders with music to test if it's working
 testdata/
 
-# Logs files
+# App Generated files
 **/*.log
+musictagger.db
