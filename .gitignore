@@ -7,3 +7,4 @@ testdata/
 # App Generated files
 **/*.log
 musictagger.db
+build/
