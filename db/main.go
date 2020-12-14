@@ -2,7 +2,8 @@ package db
 
 import (
 	"log"
-	"os"
+
+	"musictagger/core"
 
 	"github.com/jmoiron/sqlx"
 
@@ -11,7 +12,7 @@ import (
 )
 
 var schema = `
-CREATE TABLE music_info (
+CREATE TABLE IF NOT EXISTS music_info (
 	id integer,
 	path text,
 	TALB text,
@@ -21,24 +22,45 @@ CREATE TABLE music_info (
 	TCON text,
 	TRCK text,
 	TYER text,
-	primary key (id)
+	PRIMARY KEY (id),
+	UNIQUE(path)
 )
 `
 
-// Db main db usage
-var Db *sqlx.DB
+var dbConnection *sqlx.DB
 
-// InitDb created the initial schema
-func InitDb() {
-	db, err := sqlx.Connect("sqlite3", "./musictagger.db")
+// Connect creates a new DB Connection
+func Connect() {
+	var err error
+	dbConnection, err = sqlx.Connect("sqlite3", "./musictagger.db")
 	if err != nil {
 		log.Panic("Error starting the database")
 	}
-
-	db.MustExec(schema)
+	dbConnection.Ping()
+	log.Print("Creating a new DB Connection")
 }
 
-// StoreFileInfoData Stores all data sent by the 
-func StoreFileInfoData(infos []os.FileInfo) {
+// CloseSession close connection
+func CloseSession() {
+	dbConnection.Close()
+}
 
+// InitDb created the initial schema
+func InitDb() {
+	dbConnection.MustExec(schema)
+}
+
+// StoreSongData Stores all data sent into the db
+func StoreSongData(sm core.SongMetadata) {
+	storeSongStmt := `INSERT INTO music_info (path, TALB, TIT2, TPE1, TPE2, TCON, TRCK, TYER) 
+					  VALUES (:path, :talb, :tit2, :tpe1, :tpe2, :tcon, :trck, :tyer)
+					   ON CONFLICT(path) DO NOTHING`
+
+	_, err := dbConnection.NamedExec(storeSongStmt, sm)
+	if err != nil {
+		log.Printf("Error while parsing storing the data %v", err)
+		return
+	}
+
+	log.Printf("Storing data for %v", sm.Path)
 }

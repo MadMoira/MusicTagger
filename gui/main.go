@@ -2,22 +2,23 @@ package gui
 
 import (
 	"bytes"
-	"fmt"
 	"log"
+	"musictagger/core"
 	"text/template"
 
-	"github.com/mikkyang/id3-go"
-	v2 "github.com/mikkyang/id3-go/v2"
 	"github.com/rivo/tview"
 
 	"os"
 )
 
 var app *tview.Application
+var bodyFlex *tview.Flex
+
 var list *tview.List
-var tw *tview.TextView
+var detailTw *tview.TextView
 var topTw *tview.TextView
 var bottomTw *tview.TextView
+
 var frm *tview.Form
 
 var files []string
@@ -26,37 +27,48 @@ var currentPath string
 
 var oldSelection int
 
+var helpText string = `[S] Store current metadata	[R] Recover metadata	[s] Store current song
+[alt+s] Store all folder songs (including subfolders)	[alt+s] Quit app`
+
 // Init Starts the GUI
 func Init() {
-	app = tview.NewApplication()
 	list = tview.NewList()
 	list.SetBorder(true)
 	list.SetInputCapture(listEventHandler)
-	tw = tview.NewTextView()
-	tw.SetBorder(true)
-	tw.SetText("")
+	detailTw = tview.NewTextView()
+	detailTw.SetBorder(true)
+	detailTw.SetText("")
 	topTw = tview.NewTextView()
 	bottomTw = tview.NewTextView()
-	bottomTw.SetText("[S] Store current metadata\t[R] Recover metadata")
+	bottomTw.SetText(helpText)
+
+	app = tview.NewApplication()
+	bodyFlex = tview.NewFlex()
+	bodyFlex.AddItem(list, 0, 2, false)
+	bodyFlex.AddItem(detailTw, 0, 3, false)
 
 	frm = tview.NewForm()
+	frm.AddInputField("TALB", "", 30, nil, nil)
+	frm.AddInputField("TIT2", "", 30, nil, nil)
+	frm.AddInputField("TPE1", "", 30, nil, nil)
+	frm.AddInputField("TPE2", "", 30, nil, nil)
+	frm.AddInputField("TCON", "", 30, nil, nil)
+	frm.AddInputField("TRCK", "", 30, nil, nil)
+	frm.AddInputField("TYER", "", 30, nil, nil)
+	frm.AddButton("Save", func() {
+		app.Stop()
+	})
 
 	flex := tview.NewFlex().
 		AddItem(
 			tview.NewFlex().SetDirection(tview.FlexRow).
 				AddItem(topTw, 0, 1, false).
-				AddItem(
-					tview.NewFlex().
-						AddItem(list, 0, 2, false).
-						AddItem(tw, 0, 3, false),
-					0, 10, false).
+				AddItem(bodyFlex, 0, 10, false).
 				AddItem(bottomTw, 0, 1, false), 0, 1, false)
 
-	// path := "/mnt/f/Music/Afterglow"
-	path := "/home/camilo.r/Documents/pcode/go/MusicTagger/testdata/Afterglow"
-	currentPath = path
+	currentPath = core.Settings.Path
 
-	retrieveDirFiles(path)
+	retrieveDirFiles(currentPath)
 	addPathsToList(files)
 
 	app.SetRoot(flex, true).
@@ -76,57 +88,22 @@ func addPathsToList(files []string) {
 	}
 }
 
-func debugFrames(frames []v2.Framer) {
-	for _, frame := range frames {
-		log.Printf("Frame Name %v", frame.Id())
-		log.Printf("Frame Value %v", frame.String())
-	}
-}
-
 func showMetadata(songName string) {
-
-	m, err := id3.Open(currentPath + "/" + songName)
-	if err != nil {
-		log.Fatalf("Error loading file %v", songName)
-		return
-	}
-	defer m.Close()
 
 	log.Printf("Reading metadata for: %v", songName)
 
+	song := getSongMetadata(songName)
+
 	tpl, err := template.ParseFiles("gui/data.tpl")
 	if err != nil {
-		log.Fatal("Failed to retrieve template")
+		log.Panic("Failed to retrieve template")
 		return
 	}
 
-	type metadata struct {
-		TALB string
-		TIT2 string
-		TPE1 string
-		TPE2 string
-		TCON string
-		TRCK string
-		TYER string
-	}
-
-	song := metadata{
-		TALB: fmt.Sprintf("%v", m.Frame("TALB")),
-		TIT2: fmt.Sprintf("%v", m.Frame("TIT2")),
-		TPE1: fmt.Sprintf("%v", m.Frame("TPE1")),
-		TPE2: fmt.Sprintf("%v", m.Frame("TPE2")),
-		TCON: fmt.Sprintf("%v", m.Frame("TCON")),
-		TRCK: fmt.Sprintf("%v", m.Frame("TRCK")),
-		TYER: fmt.Sprintf("%v", m.Frame("TYER")),
-	}
-
-	log.Printf("things %v", song)
-
 	var result bytes.Buffer
-
 	if err := tpl.Execute(&result, song); err != nil {
-		panic(err)
+		log.Panicf("Error while rendering tempalte %v", err)
 	}
 
-	tw.SetText(result.String())
+	detailTw.SetText(result.String())
 }

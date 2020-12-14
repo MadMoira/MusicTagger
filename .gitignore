@@ -6,5 +6,6 @@ testdata/
 
 # App Generated files
 **/*.log
+conf.toml
 musictagger.db
 build/
