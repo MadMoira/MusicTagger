@@ -48,16 +48,14 @@ func Init() {
 	bodyFlex.AddItem(detailTw, 0, 3, false)
 
 	frm = tview.NewForm()
-	frm.AddInputField("TALB", "", 30, nil, nil)
-	frm.AddInputField("TIT2", "", 30, nil, nil)
-	frm.AddInputField("TPE1", "", 30, nil, nil)
-	frm.AddInputField("TPE2", "", 30, nil, nil)
-	frm.AddInputField("TCON", "", 30, nil, nil)
-	frm.AddInputField("TRCK", "", 30, nil, nil)
-	frm.AddInputField("TYER", "", 30, nil, nil)
-	frm.AddButton("Save", func() {
-		app.Stop()
-	})
+	frm.AddInputField("TALB", "", 50, nil, nil)
+	frm.AddInputField("TIT2", "", 50, nil, nil)
+	frm.AddInputField("TPE1", "", 50, nil, nil)
+	frm.AddInputField("TPE2", "", 50, nil, nil)
+	frm.AddInputField("TCON", "", 50, nil, nil)
+	frm.AddInputField("TRCK", "", 50, nil, nil)
+	frm.AddInputField("TYER", "", 50, nil, nil)
+	frm.AddButton("Save", nil)
 
 	flex := tview.NewFlex().
 		AddItem(
@@ -88,11 +86,45 @@ func addPathsToList(files []string) {
 	}
 }
 
-func showMetadata(songName string) {
+func editSingleSong(songPath string) {
 
-	log.Printf("Reading metadata for: %v", songName)
+	song := getSongMetadata(songPath)
 
-	song := getSongMetadata(songName)
+	frm.GetFormItemByLabel("TALB").(*tview.InputField).SetText(song.TALB)
+	frm.GetFormItemByLabel("TCON").(*tview.InputField).SetText(song.TCON)
+	frm.GetFormItemByLabel("TIT2").(*tview.InputField).SetText(song.TIT2)
+	frm.GetFormItemByLabel("TPE1").(*tview.InputField).SetText(song.TPE1)
+	frm.GetFormItemByLabel("TPE2").(*tview.InputField).SetText(song.TPE2)
+	frm.GetFormItemByLabel("TRCK").(*tview.InputField).SetText(song.TRCK)
+	frm.GetFormItemByLabel("TYER").(*tview.InputField).SetText(song.TYER)
+	frm.GetButton(0).SetSelectedFunc(func() {
+
+		metadata := core.SongMetadata{
+			Path: song.Path,
+			TALB: frm.GetFormItemByLabel("TALB").(*tview.InputField).GetText(),
+			TCON: frm.GetFormItemByLabel("TCON").(*tview.InputField).GetText(),
+			TIT2: frm.GetFormItemByLabel("TIT2").(*tview.InputField).GetText(),
+			TPE1: frm.GetFormItemByLabel("TPE1").(*tview.InputField).GetText(),
+			TPE2: frm.GetFormItemByLabel("TPE2").(*tview.InputField).GetText(),
+			TRCK: frm.GetFormItemByLabel("TRCK").(*tview.InputField).GetText(),
+			TYER: frm.GetFormItemByLabel("TYER").(*tview.InputField).GetText(),
+		}
+
+		saveSong(metadata)
+	})
+
+	bodyFlex.RemoveItem(detailTw)
+	bodyFlex.RemoveItem(frm)
+	bodyFlex.AddItem(frm, 0, 3, false)
+
+	app.SetFocus(frm)
+}
+
+func showMetadata(songPath string) {
+
+	log.Printf("Reading metadata for: %v", songPath)
+
+	song := getSongMetadata(songPath)
 
 	tpl, err := template.ParseFiles("gui/data.tpl")
 	if err != nil {
@@ -106,4 +138,8 @@ func showMetadata(songName string) {
 	}
 
 	detailTw.SetText(result.String())
+
+	bodyFlex.RemoveItem(detailTw)
+	bodyFlex.RemoveItem(frm)
+	bodyFlex.AddItem(detailTw, 0, 3, false)
 }

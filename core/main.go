@@ -9,14 +9,14 @@ import (
 
 // SongMetadata Core structure for storing and displaying song
 type SongMetadata struct {
-	Path string
-	TALB string
-	TIT2 string
-	TPE1 string
-	TPE2 string
-	TCON string
-	TRCK string
-	TYER string
+	Path string `db:"path"`
+	TALB string `db:"TALB"`
+	TIT2 string `db:"TIT2"`
+	TPE1 string `db:"TPE1"`
+	TPE2 string `db:"TPE2"`
+	TCON string `db:"TCON"`
+	TRCK string `db:"TRCK"`
+	TYER string `db:"TYER"`
 }
 
 type configuration struct {

@@ -36,6 +36,23 @@ func listEventHandler(eventKey *tcell.EventKey) *tcell.EventKey {
 		list.SetCurrentItem(oldSelection)
 	}
 
+	if eventKey.Rune() == 'r' {
+		currentItem := list.GetCurrentItem()
+		if !infos[currentItem].IsDir() {
+			songPath := currentPath + "/" + files[currentItem]
+			recoverSingleSong(songPath)
+		}
+	}
+
+	if eventKey.Rune() == 'e' && eventKey.Modifiers() == tcell.ModNone {
+		currentItem := list.GetCurrentItem()
+
+		if !infos[currentItem].IsDir() {
+			songPath := currentPath + "/" + files[currentItem]
+			editSingleSong(songPath)
+		}
+	}
+
 	if eventKey.Rune() == 's' && eventKey.Modifiers() == tcell.ModNone {
 		currentItem := list.GetCurrentItem()
 		songPath := currentPath + "/" + files[currentItem]
@@ -60,6 +77,9 @@ func listEventHandler(eventKey *tcell.EventKey) *tcell.EventKey {
 }
 
 func appEventHandler(eventKey *tcell.EventKey) *tcell.EventKey {
+	if eventKey.Rune() == 'w' {
+		app.SetFocus(list)
+	}
 	if eventKey.Rune() == 'q' && eventKey.Modifiers() == tcell.ModAlt {
 		app.Stop()
 	}

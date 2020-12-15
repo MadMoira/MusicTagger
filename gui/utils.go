@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"musictagger/core"
+	"musictagger/db"
 
 	"github.com/mikkyang/id3-go"
 
@@ -106,6 +108,88 @@ func getSongMetadata(songPath string) *core.SongMetadata {
 	}
 
 	return &song
+}
+
+func editFrame(f *id3.File, frame string, newValue string) {
+	if len(newValue) == 0 {
+		return
+	}
+
+	f.DeleteFrames(frame)
+	createFrame(f, frame, newValue)
+}
+
+func createFrame(f *id3.File, frame string, newValue string) {
+	if len(newValue) == 0 {
+		return
+	}
+
+	ft := v2.V23FrameTypeMap[frame]
+	textFrame := v2.NewTextFrame(ft, "")
+	textFrame.SetEncoding("UTF-8")
+	textFrame.SetText(newValue)
+	f.AddFrames(textFrame)
+}
+
+func saveSong(newMetadata core.SongMetadata) {
+	log.Printf("Editing file %v", newMetadata)
+
+	songPath := newMetadata.Path
+	m, err := id3.Open(songPath)
+	if err != nil {
+		log.Printf("Error loading file %v", songPath)
+		return
+	}
+	defer m.Close()
+
+	frameList := []string{"TALB", "TIT2", "TPE1", "TPE2", "TCON", "TRCK", "TYER"}
+	var newValues map[string]string
+
+	in, _ := json.Marshal(newMetadata)
+	json.Unmarshal(in, &newValues)
+
+	for _, frame := range frameList {
+		if m.Frame(frame) != nil {
+			if frame == "TRCK" || frame == "TYER" {
+				editFrame(m, frame, newValues[frame])
+			} else {
+				editFrame(m, frame, newValues[frame])
+			}
+		} else {
+			createFrame(m, frame, newValues[frame])
+		}
+	}
+}
+
+func recoverSingleSong(songPath string) {
+	log.Printf("Recovering file %v", songPath)
+
+	m, err := id3.Open(songPath)
+	if err != nil {
+		log.Printf("Error loading file %v", songPath)
+		return
+	}
+	defer m.Close()
+
+	sm := db.RecoverByPath(songPath)
+
+	frameList := []string{"TALB", "TIT2", "TPE1", "TPE2", "TCON", "TRCK", "TYER"}
+	var newValues map[string]string
+
+	in, _ := json.Marshal(&sm)
+	json.Unmarshal(in, &newValues)
+
+	for _, frame := range frameList {
+		if m.Frame(frame) != nil {
+			if frame == "TRCK" || frame == "TYER" {
+				editFrame(m, frame, newValues[frame])
+			} else {
+				editFrame(m, frame, newValues[frame])
+			}
+		} else {
+			createFrame(m, frame, newValues[frame])
+		}
+	}
 }
 
 func debugFrames(frames []v2.Framer) {

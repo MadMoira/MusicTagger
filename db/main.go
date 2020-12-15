@@ -53,7 +53,7 @@ func InitDb() {
 // StoreSongData Stores all data sent into the db
 func StoreSongData(sm core.SongMetadata) {
 	storeSongStmt := `INSERT INTO music_info (path, TALB, TIT2, TPE1, TPE2, TCON, TRCK, TYER) 
-					  VALUES (:path, :talb, :tit2, :tpe1, :tpe2, :tcon, :trck, :tyer)
+					  VALUES (:path, :TALB, :TIT2, :TPE1, :TPE2, :TCON, :TRCK, :TYER)
 					   ON CONFLICT(path) DO NOTHING`
 
 	_, err := dbConnection.NamedExec(storeSongStmt, sm)
@@ -63,4 +63,19 @@ func StoreSongData(sm core.SongMetadata) {
 	}
 
 	log.Printf("Storing data for %v", sm.Path)
+}
+
+// RecoverByPath recover from the database one song by path
+func RecoverByPath(songPath string) *core.SongMetadata {
+	retrieveSongByPath := `SELECT path, talb, tit2, tpe1, tpe2, tcon, trck, tyer
+						   FROM music_info WHERE path = ?`
+
+	sm := core.SongMetadata{}
+	err := dbConnection.Get(&sm, retrieveSongByPath, songPath)
+	if err != nil {
+		log.Printf("Error querying: %v", err)
+		return nil
+	}
+
+	return &sm
 }
