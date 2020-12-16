@@ -27,8 +27,7 @@ var currentPath string
 
 var oldSelection int
 
-var helpText string = `[S] Store current metadata	[R] Recover metadata	[s] Store current song
-[alt+s] Store all folder songs (including subfolders)	[alt+s] Quit app`
+var helpText string = `[s] Store song metadata [S] Store folder metadata [r] Recover song metadata [R] Recover folder metadata [e] Open single song edit [w] Focus list [Q] Quit app`
 
 // Init Starts the GUI
 func Init() {
@@ -86,7 +85,7 @@ func addPathsToList(files []string) {
 	}
 }
 
-func editSingleSong(songPath string) {
+func formEditSingleSong(songPath string) {
 
 	song := getSongMetadata(songPath)
 
@@ -97,8 +96,8 @@ func editSingleSong(songPath string) {
 	frm.GetFormItemByLabel("TPE2").(*tview.InputField).SetText(song.TPE2)
 	frm.GetFormItemByLabel("TRCK").(*tview.InputField).SetText(song.TRCK)
 	frm.GetFormItemByLabel("TYER").(*tview.InputField).SetText(song.TYER)
-	frm.GetButton(0).SetSelectedFunc(func() {
 
+	frm.GetButton(0).SetSelectedFunc(func() {
 		metadata := core.SongMetadata{
 			Path: song.Path,
 			TALB: frm.GetFormItemByLabel("TALB").(*tview.InputField).GetText(),
@@ -109,8 +108,8 @@ func editSingleSong(songPath string) {
 			TRCK: frm.GetFormItemByLabel("TRCK").(*tview.InputField).GetText(),
 			TYER: frm.GetFormItemByLabel("TYER").(*tview.InputField).GetText(),
 		}
-
-		saveSong(metadata)
+		log.Print(metadata)
+		editSingleSong(metadata)
 	})
 
 	bodyFlex.RemoveItem(detailTw)
@@ -121,8 +120,6 @@ func editSingleSong(songPath string) {
 }
 
 func showMetadata(songPath string) {
-
-	log.Printf("Reading metadata for: %v", songPath)
 
 	song := getSongMetadata(songPath)
 

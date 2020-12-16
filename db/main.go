@@ -25,6 +25,14 @@ CREATE TABLE IF NOT EXISTS music_info (
 	PRIMARY KEY (id),
 	UNIQUE(path)
 )
+
+CREATE TABLE IF NOT EXISTS folder_status (
+	id integer,
+	path text,
+	visited boolean,
+	PRIMARY KEY (id),
+	UNIQUE(path)
+)
 `
 
 var dbConnection *sqlx.DB
@@ -65,8 +73,21 @@ func StoreSongData(sm core.SongMetadata) {
 	log.Printf("Storing data for %v", sm.Path)
 }
 
-// RecoverByPath recover from the database one song by path
-func RecoverByPath(songPath string) *core.SongMetadata {
+// StoreFolderStatus placeholder comment
+func StoreFolderStatus(folderPath string) {
+	storeFolderStmt := `INSERT INTO folder_status (path, visited)
+						VALUES (?, ?) ON CONFLICT (path) DO NOTHING`
+
+	_, err := dbConnection.Exec(storeFolderStmt, folderPath, true)
+	if err != nil {
+		log.Printf("Error while storing folder status %v", folderPath)
+	}
+
+	log.Printf("Folder %v visited", folderPath)
+}
+
+// RecoverSongByPath recover from the database one song by path
+func RecoverSongByPath(songPath string) *core.SongMetadata {
 	retrieveSongByPath := `SELECT path, talb, tit2, tpe1, tpe2, tcon, trck, tyer
 						   FROM music_info WHERE path = ?`
 

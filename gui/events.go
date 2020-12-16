@@ -36,6 +36,15 @@ func listEventHandler(eventKey *tcell.EventKey) *tcell.EventKey {
 		list.SetCurrentItem(oldSelection)
 	}
 
+	if eventKey.Rune() == 'e' {
+		currentItem := list.GetCurrentItem()
+
+		if !infos[currentItem].IsDir() {
+			songPath := currentPath + "/" + files[currentItem]
+			formEditSingleSong(songPath)
+		}
+	}
+
 	if eventKey.Rune() == 'r' {
 		currentItem := list.GetCurrentItem()
 		if !infos[currentItem].IsDir() {
@@ -44,16 +53,14 @@ func listEventHandler(eventKey *tcell.EventKey) *tcell.EventKey {
 		}
 	}
 
-	if eventKey.Rune() == 'e' && eventKey.Modifiers() == tcell.ModNone {
-		currentItem := list.GetCurrentItem()
-
-		if !infos[currentItem].IsDir() {
-			songPath := currentPath + "/" + files[currentItem]
-			editSingleSong(songPath)
+	if eventKey.Rune() == 'R' {
+		allPaths, _ := retrieveAllFiles(currentPath)
+		for _, path := range allPaths {
+			recoverSingleSong(path)
 		}
 	}
 
-	if eventKey.Rune() == 's' && eventKey.Modifiers() == tcell.ModNone {
+	if eventKey.Rune() == 's' {
 		currentItem := list.GetCurrentItem()
 		songPath := currentPath + "/" + files[currentItem]
 		song := getSongMetadata(songPath)
@@ -62,7 +69,7 @@ func listEventHandler(eventKey *tcell.EventKey) *tcell.EventKey {
 		log.Printf("Finished storing song %v", files[currentItem])
 	}
 
-	if eventKey.Rune() == 's' && eventKey.Modifiers() == tcell.ModAlt {
+	if eventKey.Rune() == 'S' {
 		log.Print("Storing all songs")
 		log.Print(currentPath)
 		allPaths, _ := retrieveAllFiles(currentPath)
@@ -80,7 +87,7 @@ func appEventHandler(eventKey *tcell.EventKey) *tcell.EventKey {
 	if eventKey.Rune() == 'w' {
 		app.SetFocus(list)
 	}
-	if eventKey.Rune() == 'q' && eventKey.Modifiers() == tcell.ModAlt {
+	if eventKey.Rune() == 'Q' {
 		app.Stop()
 	}
 	return eventKey
